@@ -12,7 +12,7 @@ metadata:
   name: carbonawarekarmadapolicy-editor-role
 rules:
 - apiGroups:
-  - carbonawarepolicy.rossf7.github.io
+  - carbonaware.rossf7.github.io
   resources:
   - carbonawarekarmadapolicies
   verbs:
@@ -24,7 +24,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - carbonawarepolicy.rossf7.github.io
+  - carbonaware.rossf7.github.io
   resources:
   - carbonawarekarmadapolicies/status
   verbs:

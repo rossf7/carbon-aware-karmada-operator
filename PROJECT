@@ -13,7 +13,7 @@ resources:
     namespaced: true
   controller: true
   domain: rossf7.github.io
-  group: carbonawarepolicy
+  group: carbonaware
   kind: CarbonAwareKarmadaPolicy
   path: github.com/rossf7/carbon-aware-karmada-operator/api/v1alpha1
   version: v1alpha1

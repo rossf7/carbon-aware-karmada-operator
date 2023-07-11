@@ -1,4 +1,4 @@
-apiVersion: carbonawarepolicy.rossf7.github.io/v1alpha1
+apiVersion: carbonaware.rossf7.github.io/v1alpha1
 kind: CarbonAwareKarmadaPolicy
 metadata:
   name: carbon-aware-nginx-propagation

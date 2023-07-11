@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	carbonawarepolicyv1alpha1 "github.com/rossf7/carbon-aware-karmada-operator/api/v1alpha1"
+	carbonawarev1alpha1 "github.com/rossf7/carbon-aware-karmada-operator/api/v1alpha1"
 	"github.com/rossf7/carbon-aware-karmada-operator/internal/controller"
 	//+kubebuilder:scaffold:imports
 )
@@ -44,7 +44,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(carbonawarepolicyv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(carbonawarev1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

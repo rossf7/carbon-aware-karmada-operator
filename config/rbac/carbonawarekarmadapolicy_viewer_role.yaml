@@ -12,7 +12,7 @@ metadata:
   name: carbonawarekarmadapolicy-viewer-role
 rules:
 - apiGroups:
-  - carbonawarepolicy.rossf7.github.io
+  - carbonaware.rossf7.github.io
   resources:
   - carbonawarekarmadapolicies
   verbs:
@@ -20,7 +20,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - carbonawarepolicy.rossf7.github.io
+  - carbonaware.rossf7.github.io
   resources:
   - carbonawarekarmadapolicies/status
   verbs:

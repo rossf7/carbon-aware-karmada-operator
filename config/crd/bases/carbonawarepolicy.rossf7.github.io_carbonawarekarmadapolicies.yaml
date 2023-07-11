@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.3
   creationTimestamp: null
-  name: carbonawarekarmadapolicies.carbonawarepolicy.rossf7.github.io
+  name: carbonawarekarmadapolicies.carbonaware.rossf7.github.io
 spec:
-  group: carbonawarepolicy.rossf7.github.io
+  group: carbonaware.rossf7.github.io
   names:
     kind: CarbonAwareKarmadaPolicy
     listKind: CarbonAwareKarmadaPolicyList

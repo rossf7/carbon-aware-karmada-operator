@@ -29,7 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	carbonawarepolicyv1alpha1 "github.com/rossf7/carbon-aware-karmada-operator/api/v1alpha1"
+	carbonawarev1alpha1 "github.com/rossf7/carbon-aware-karmada-operator/api/v1alpha1"
 )
 
 // CarbonAwareKarmadaPolicyReconciler reconciles a CarbonAwareKarmadaPolicy object
@@ -38,9 +38,9 @@ type CarbonAwareKarmadaPolicyReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=carbonawarepolicy.rossf7.github.io,resources=carbonawarekarmadapolicies,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=carbonawarepolicy.rossf7.github.io,resources=carbonawarekarmadapolicies/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=carbonawarepolicy.rossf7.github.io,resources=carbonawarekarmadapolicies/finalizers,verbs=update
+//+kubebuilder:rbac:groups=carbonaware.rossf7.github.io,resources=carbonawarekarmadapolicies,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=carbonaware.rossf7.github.io,resources=carbonawarekarmadapolicies/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=carbonaware.rossf7.github.io,resources=carbonawarekarmadapolicies/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -58,7 +58,7 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 
 	logger.Info("processing CR")
 
-	carbonAwareKarmadaPolicy := &carbonawarepolicyv1alpha1.CarbonAwareKarmadaPolicy{}
+	carbonAwareKarmadaPolicy := &carbonawarev1alpha1.CarbonAwareKarmadaPolicy{}
 	err := r.Get(ctx, req.NamespacedName, carbonAwareKarmadaPolicy)
 	if err != nil {
 		logger.Error(err, "unable to find carbonawarekarmadapolicy")
@@ -130,6 +130,6 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 // SetupWithManager sets up the controller with the Manager.
 func (r *CarbonAwareKarmadaPolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&carbonawarepolicyv1alpha1.CarbonAwareKarmadaPolicy{}).
+		For(&carbonawarev1alpha1.CarbonAwareKarmadaPolicy{}).
 		Complete(r)
 }

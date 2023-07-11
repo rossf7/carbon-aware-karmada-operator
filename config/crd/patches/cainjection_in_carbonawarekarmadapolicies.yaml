@@ -4,4 +4,4 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: CERTIFICATE_NAMESPACE/CERTIFICATE_NAME
-  name: carbonawarekarmadapolicies.carbonawarepolicy.rossf7.github.io
+  name: carbonawarekarmadapolicies.carbonaware.rossf7.github.io
