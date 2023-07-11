@@ -1,0 +1,147 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.3
+  creationTimestamp: null
+  name: carbonawarekarmadapolicies.carbonaware.rossf7.github.io
+spec:
+  group: carbonaware.rossf7.github.io
+  names:
+    kind: CarbonAwareKarmadaPolicy
+    listKind: CarbonAwareKarmadaPolicyList
+    plural: carbonawarekarmadapolicies
+    singular: carbonawarekarmadapolicy
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: CarbonAwareKarmadaPolicy is the Schema for the carbonawarekarmadapolicies
+          API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: CarbonAwareKarmadaPolicySpec defines the desired state of
+              CarbonAwareKarmadaPolicy
+            properties:
+              clusterLocations:
+                description: ClusterLocations is an array of member clusters and their
+                  locations using the location codes supported by the carbon intensity
+                  API being used.
+                items:
+                  description: ClusterLocation represents a member cluster and its
+                    physical location so the carbon intensity for this location can
+                    be retrieved.
+                  properties:
+                    location:
+                      description: location of the karmada member cluster
+                      type: string
+                    name:
+                      description: name of the karmada member cluster
+                      type: string
+                  required:
+                  - location
+                  - name
+                  type: object
+                type: array
+              desiredClusters:
+                description: DesiredClusters is the number of member clusters to select.
+                format: int32
+                type: integer
+              karmadaTarget:
+                description: KarmadaTarget is the type of the karmada object to update.
+                enum:
+                - clusterpropagationpolicies.policy.karmada.io
+                - propagationpolicies.policy.karmada.io
+                type: string
+              karmadaTargetRef:
+                description: KarmadaTargetRef is the reference to the karmada object
+                  to update.
+                properties:
+                  name:
+                    description: name of the karmada policy
+                    type: string
+                  namespace:
+                    description: namespace of the karmada policy
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+            required:
+            - clusterLocations
+            - desiredClusters
+            - karmadaTarget
+            - karmadaTargetRef
+            type: object
+          status:
+            description: CarbonAwareKarmadaPolicyStatus defines the observed state
+              of CarbonAwareKarmadaPolicy
+            properties:
+              activeClusters:
+                description: ActiveClusters is an array of member cluster names.
+                items:
+                  type: string
+                type: array
+              clusters:
+                description: Clusters is an array of member cluster statuses including
+                  location and carbon intensity.
+                items:
+                  description: ClusterStatus represents a member cluster and its physical
+                    location so the carbon intensity for this location can be retrieved.
+                  properties:
+                    carbonIntensity:
+                      description: carbon intensity for this location
+                      properties:
+                        units:
+                          type: string
+                        validFrom:
+                          type: string
+                        validTo:
+                          type: string
+                        value:
+                          type: string
+                      required:
+                      - units
+                      - validFrom
+                      - validTo
+                      - value
+                      type: object
+                    location:
+                      description: location of the karmada member cluster
+                      type: string
+                    name:
+                      description: name of the karmada member cluster
+                      type: string
+                  required:
+                  - carbonIntensity
+                  - location
+                  - name
+                  type: object
+                type: array
+              provider:
+                description: Provider of carbon intensity data.
+                type: string
+            required:
+            - activeClusters
+            - clusters
+            - provider
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

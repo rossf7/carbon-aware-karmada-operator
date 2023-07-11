@@ -1,0 +1,27 @@
+# permissions for end users to view carbonawarekarmadapolicies.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: carbonawarekarmadapolicy-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: carbon-aware-karmada-operator
+    app.kubernetes.io/part-of: carbon-aware-karmada-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: carbonawarekarmadapolicy-viewer-role
+rules:
+- apiGroups:
+  - carbonaware.rossf7.github.io
+  resources:
+  - carbonawarekarmadapolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - carbonaware.rossf7.github.io
+  resources:
+  - carbonawarekarmadapolicies/status
+  verbs:
+  - get
