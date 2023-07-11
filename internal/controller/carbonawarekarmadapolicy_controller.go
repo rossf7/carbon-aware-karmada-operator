@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -85,12 +86,25 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 	})
 
 	activeClusters := []string{}
+	clusterStatuses := []carbonawarev1alpha1.ClusterStatus{}
 	desiredClusters := int(*carbonAwareKarmadaPolicy.Spec.DesiredClusters)
 
 	for i, c := range clusters {
 		if i < desiredClusters {
 			activeClusters = append(activeClusters, c.ClusterName)
 		}
+
+		status := carbonawarev1alpha1.ClusterStatus{
+			CarbonIntensity: carbonawarev1alpha1.ClusterCarbonIntensityStatus{
+				Units:     c.CarbonIntensity.Units,
+				ValidFrom: c.CarbonIntensity.ValidFrom.Format(time.RFC3339),
+				ValidTo:   c.CarbonIntensity.ValidTo.Format(time.RFC3339),
+				Value:     fmt.Sprintf("%.2f", c.CarbonIntensity.Value),
+			},
+			Location: c.CarbonIntensity.Location,
+			Name:     c.ClusterName,
+		}
+		clusterStatuses = append(clusterStatuses, status)
 	}
 
 	switch {
@@ -135,6 +149,14 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 			logger.Error(err, "unable to update propagation policy")
 			return ctrl.Result{RequeueAfter: requeueInterval}, err
 		}
+	}
+
+	carbonAwareKarmadaPolicy.Status.ActiveClusters = activeClusters
+	carbonAwareKarmadaPolicy.Status.Clusters = clusterStatuses
+	err = r.Status().Update(ctx, carbonAwareKarmadaPolicy)
+	if err != nil {
+		logger.Error(err, "unable to update status")
+		return ctrl.Result{RequeueAfter: requeueInterval}, err
 	}
 
 	return ctrl.Result{RequeueAfter: requeueInterval}, nil

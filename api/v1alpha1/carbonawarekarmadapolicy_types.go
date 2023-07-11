@@ -41,8 +41,8 @@ type CarbonAwareKarmadaPolicySpec struct {
 
 // CarbonAwareKarmadaPolicyStatus defines the observed state of CarbonAwareKarmadaPolicy
 type CarbonAwareKarmadaPolicyStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	ActiveClusters []string        `json:"activeClusters"`
+	Clusters       []ClusterStatus `json:"clusters"`
 }
 
 //+kubebuilder:object:root=true
@@ -76,6 +76,19 @@ type ClusterLocation struct {
 	// name of the karmada member cluster
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
+}
+
+type ClusterCarbonIntensityStatus struct {
+	Units     string `json:"units"`
+	ValidFrom string `json:"validFrom"`
+	ValidTo   string `json:"validTo"`
+	Value     string `json:"value"`
+}
+
+type ClusterStatus struct {
+	CarbonIntensity ClusterCarbonIntensityStatus `json:"carbonIntensity"`
+	Location        string                       `json:"location"`
+	Name            string                       `json:"name"`
 }
 
 // KarmadaTarget represents the type of the Karmada policy

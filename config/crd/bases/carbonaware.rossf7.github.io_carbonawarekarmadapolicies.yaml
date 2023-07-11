@@ -87,6 +87,43 @@ spec:
           status:
             description: CarbonAwareKarmadaPolicyStatus defines the observed state
               of CarbonAwareKarmadaPolicy
+            properties:
+              activeClusters:
+                items:
+                  type: string
+                type: array
+              clusters:
+                items:
+                  properties:
+                    carbonIntensity:
+                      properties:
+                        units:
+                          type: string
+                        validFrom:
+                          type: string
+                        validTo:
+                          type: string
+                        value:
+                          type: string
+                      required:
+                      - units
+                      - validFrom
+                      - validTo
+                      - value
+                      type: object
+                    location:
+                      type: string
+                    name:
+                      type: string
+                  required:
+                  - carbonIntensity
+                  - location
+                  - name
+                  type: object
+                type: array
+            required:
+            - activeClusters
+            - clusters
             type: object
         type: object
     served: true
