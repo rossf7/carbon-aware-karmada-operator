@@ -1,0 +1,17 @@
+apiVersion: carbonaware.rossf7.github.io/v1alpha1
+kind: CarbonAwareKarmadaPolicy
+metadata:
+  name: carbon-aware-nginx-policy
+spec:
+  clusterLocations:
+  - name: member1
+    location: FR
+  - name: member2
+    location: ES
+  - name: member3
+    location: DE
+  desiredClusters: 2
+  karmadaTarget: propagationpolicies.policy.karmada.io
+  karmadaTargetRef:
+    name: nginx-propagation
+    namespace: default
