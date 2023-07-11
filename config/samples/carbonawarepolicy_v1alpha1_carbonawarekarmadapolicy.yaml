@@ -1,0 +1,12 @@
+apiVersion: carbonawarepolicy.rossf7.github.io/v1alpha1
+kind: CarbonAwareKarmadaPolicy
+metadata:
+  labels:
+    app.kubernetes.io/name: carbonawarekarmadapolicy
+    app.kubernetes.io/instance: carbonawarekarmadapolicy-sample
+    app.kubernetes.io/part-of: carbon-aware-karmada-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: carbon-aware-karmada-operator
+  name: carbonawarekarmadapolicy-sample
+spec:
+  # TODO(user): Add fields here
