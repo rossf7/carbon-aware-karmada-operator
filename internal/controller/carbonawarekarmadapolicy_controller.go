@@ -18,13 +18,14 @@ package controller
 
 import (
 	"context"
-	"os"
 	"sort"
+	"strings"
+	"time"
 
 	karmadav1alpha1 "github.com/karmada-io/karmada/pkg/apis/policy/v1alpha1"
-	"github.com/thegreenwebfoundation/grid-intensity-go/pkg/provider"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -32,10 +33,16 @@ import (
 	carbonawarev1alpha1 "github.com/rossf7/carbon-aware-karmada-operator/api/v1alpha1"
 )
 
+const (
+	requeueInterval time.Duration = 5 * time.Minute
+)
+
 // CarbonAwareKarmadaPolicyReconciler reconciles a CarbonAwareKarmadaPolicy object
 type CarbonAwareKarmadaPolicyReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
+	CarbonIntensityFetcher
 }
 
 //+kubebuilder:rbac:groups=carbonaware.rossf7.github.io,resources=carbonawarekarmadapolicies,verbs=get;list;watch;create;update;patch;delete
@@ -44,10 +51,6 @@ type CarbonAwareKarmadaPolicyReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the CarbonAwareKarmadaPolicy object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.4/pkg/reconcile
@@ -56,75 +59,85 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 
 	karmadav1alpha1.AddToScheme(r.Scheme)
 
-	logger.Info("processing CR")
-
 	carbonAwareKarmadaPolicy := &carbonawarev1alpha1.CarbonAwareKarmadaPolicy{}
 	err := r.Get(ctx, req.NamespacedName, carbonAwareKarmadaPolicy)
 	if err != nil {
 		logger.Error(err, "unable to find carbonawarekarmadapolicy")
+		return ctrl.Result{RequeueAfter: requeueInterval}, client.IgnoreNotFound(err)
 	}
 
 	logger.Info("got custom resource", "policy", carbonAwareKarmadaPolicy)
 
-	c := provider.WattTimeConfig{
-		APIUser:     os.Getenv("WATT_TIME_API_USER"),
-		APIPassword: os.Getenv("WATT_TIME_API_PASSWORD"),
-	}
-	p, err := provider.NewWattTime(c)
-	if err != nil {
-		logger.Error(err, "unable to create watt time provider")
-	}
-
-	locations := map[string]float64{}
+	clusters := []ClusterCarbonIntensity{}
 
 	for _, loc := range carbonAwareKarmadaPolicy.Spec.ClusterLocations {
-		carbonIntensity, err := p.GetCarbonIntensity(ctx, loc.Location)
+		clusterCarbonIntensity, err := r.CarbonIntensityFetcher.Fetch(ctx, loc.Name, loc.Location)
 		if err != nil {
 			logger.Error(err, "unable to get carbon intensity", "location", loc.Location)
+			return ctrl.Result{RequeueAfter: requeueInterval}, err
 		}
 
-		logger.Info("cluster location", "loc", loc, "carbon intensity", carbonIntensity)
-		locations[loc.Name] = carbonIntensity[0].Value
-	}
-
-	type kv struct {
-		Key   string
-		Value float64
-	}
-
-	var clusters []kv
-	for k, v := range locations {
-		clusters = append(clusters, kv{k, v})
+		clusters = append(clusters, clusterCarbonIntensity)
 	}
 
 	sort.Slice(clusters, func(i, j int) bool {
-		return clusters[i].Value < clusters[j].Value
+		return clusters[i].CarbonIntensity.Value < clusters[j].CarbonIntensity.Value
 	})
 
-	activeClusters := int(*carbonAwareKarmadaPolicy.Spec.ActiveClusters)
-	clusterNames := []string{}
+	activeClusters := []string{}
+	desiredClusters := int(*carbonAwareKarmadaPolicy.Spec.DesiredClusters)
 
-	for i := 0; i < activeClusters; i++ {
-		clusterNames = append(clusterNames, clusters[i].Key)
+	for i, c := range clusters {
+		if i < desiredClusters {
+			activeClusters = append(activeClusters, c.ClusterName)
+		}
 	}
 
-	propagationPolicy := &karmadav1alpha1.PropagationPolicy{}
-	err = r.Get(ctx, types.NamespacedName{Name: carbonAwareKarmadaPolicy.Spec.KarmadaPolicyRef.Name,
-		Namespace: carbonAwareKarmadaPolicy.Spec.KarmadaPolicyRef.Namespace}, propagationPolicy)
-	if err != nil {
-		logger.Error(err, "unable to find propagation policy")
+	switch {
+	case strings.Contains(string(carbonAwareKarmadaPolicy.Spec.KarmadaTarget), "clusterpropagationpolicies"):
+		clusterPropagationPolicy := &karmadav1alpha1.ClusterPropagationPolicy{}
+		err = r.Get(ctx, types.NamespacedName{Name: carbonAwareKarmadaPolicy.Spec.KarmadaTargetRef.Name}, clusterPropagationPolicy)
+		if err != nil {
+			logger.Error(err, "unable to find cluster propagation policy")
+			return ctrl.Result{RequeueAfter: requeueInterval}, err
+		}
+
+		if clusterPropagationPolicy.Spec.Placement.ClusterAffinity == nil {
+			clusterPropagationPolicy.Spec.Placement.ClusterAffinity = &karmadav1alpha1.ClusterAffinity{
+				ClusterNames: activeClusters,
+			}
+		} else {
+			clusterPropagationPolicy.Spec.Placement.ClusterAffinity.ClusterNames = activeClusters
+		}
+		err = r.Update(ctx, clusterPropagationPolicy)
+		if err != nil {
+			logger.Error(err, "unable to update cluster propagation policy")
+			return ctrl.Result{RequeueAfter: requeueInterval}, err
+		}
+	case strings.Contains(string(carbonAwareKarmadaPolicy.Spec.KarmadaTarget), "propagationpolicies"):
+		propagationPolicy := &karmadav1alpha1.PropagationPolicy{}
+		err = r.Get(ctx, types.NamespacedName{Name: carbonAwareKarmadaPolicy.Spec.KarmadaTargetRef.Name,
+			Namespace: carbonAwareKarmadaPolicy.Spec.KarmadaTargetRef.Namespace}, propagationPolicy)
+		if err != nil {
+			logger.Error(err, "unable to find propagation policy")
+			return ctrl.Result{RequeueAfter: requeueInterval}, err
+		}
+
+		if propagationPolicy.Spec.Placement.ClusterAffinity == nil {
+			propagationPolicy.Spec.Placement.ClusterAffinity = &karmadav1alpha1.ClusterAffinity{
+				ClusterNames: activeClusters,
+			}
+		} else {
+			propagationPolicy.Spec.Placement.ClusterAffinity.ClusterNames = activeClusters
+		}
+		err = r.Update(ctx, propagationPolicy)
+		if err != nil {
+			logger.Error(err, "unable to update propagation policy")
+			return ctrl.Result{RequeueAfter: requeueInterval}, err
+		}
 	}
 
-	logger.Info("got propagation policy", "policy", propagationPolicy)
-
-	propagationPolicy.Spec.Placement.ClusterAffinity.ClusterNames = clusterNames
-
-	err = r.Update(ctx, propagationPolicy)
-	if err != nil {
-		logger.Error(err, "unable to update propagation policy")
-	}
-
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: requeueInterval}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

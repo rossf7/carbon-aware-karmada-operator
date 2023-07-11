@@ -37,10 +37,6 @@ spec:
             description: CarbonAwareKarmadaPolicySpec defines the desired state of
               CarbonAwareKarmadaPolicy
             properties:
-              activeClusters:
-                description: number of member clusters to propagate resources to.
-                format: int32
-                type: integer
               clusterLocations:
                 description: array of member clusters and their physical locations
                 items:
@@ -48,15 +44,6 @@ spec:
                     physical location so the carbon intensity for this location can
                     be retrieved.
                   properties:
-                    geoLocation:
-                      description: geo location of the karmada member cluster
-                      items:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                      type: array
                     location:
                       description: location of the karmada member cluster
                       type: string
@@ -64,18 +51,21 @@ spec:
                       description: name of the karmada member cluster
                       type: string
                   required:
-                  - geoLocation
                   - location
                   - name
                   type: object
                 type: array
-              karmadaPolicy:
+              desiredClusters:
+                description: number of member clusters to propagate resources to.
+                format: int32
+                type: integer
+              karmadaTarget:
                 description: type of the karmada object to scale
                 enum:
                 - clusterpropagationpolicies.policy.karmada.io
                 - propagationpolicies.policy.karmada.io
                 type: string
-              karmadaPolicyRef:
+              karmadaTargetRef:
                 description: reference to the karmada object to scale
                 properties:
                   name:
@@ -89,10 +79,10 @@ spec:
                 - namespace
                 type: object
             required:
-            - activeClusters
             - clusterLocations
-            - karmadaPolicy
-            - karmadaPolicyRef
+            - desiredClusters
+            - karmadaTarget
+            - karmadaTargetRef
             type: object
           status:
             description: CarbonAwareKarmadaPolicyStatus defines the observed state

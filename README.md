@@ -10,7 +10,7 @@ Carbon intensity measures how much carbon (CO2 equivalent) is emitted per kilowa
 
 ## How Does It Work?
 
-[Karmada](https://karmada.io/) runs in a control plane cluster and can schedule workloads across multiple member clusters. 
+[Karmada](https://karmada.io/) runs in a control plane cluster and can schedule workloads across multiple member clusters.
 
 Karmada allows you to define a propagation policy that defines which resources to schedule in the member
 clusters. In this case it's an nginx deployment but it could be any kubernetes resource.

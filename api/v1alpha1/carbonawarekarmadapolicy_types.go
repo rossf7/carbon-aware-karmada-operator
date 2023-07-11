@@ -17,27 +17,26 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CarbonAwareKarmadaPolicySpec defines the desired state of CarbonAwareKarmadaPolicy
 type CarbonAwareKarmadaPolicySpec struct {
-	// number of member clusters to propagate resources to.
-	// +kubebuilder:validation:Required
-	ActiveClusters *int32 `json:"activeClusters"`
-
 	// array of member clusters and their physical locations
 	// +kubebuilder:validation:Required
 	ClusterLocations []ClusterLocation `json:"clusterLocations"`
 
+	// number of member clusters to propagate resources to.
+	// +kubebuilder:validation:Required
+	DesiredClusters *int32 `json:"desiredClusters"`
+
 	// type of the karmada object to scale
 	// +kubebuilder:validation:Required
-	KarmadaPolicy KarmadaPolicy `json:"karmadaPolicy"`
+	KarmadaTarget KarmadaTarget `json:"karmadaTarget"`
 
 	// reference to the karmada object to scale
 	// +kubebuilder:validation:Required
-	KarmadaPolicyRef KarmadaPolicyRef `json:"karmadaPolicyRef"`
+	KarmadaTargetRef KarmadaTargetRef `json:"karmadaTargetRef"`
 }
 
 // CarbonAwareKarmadaPolicyStatus defines the observed state of CarbonAwareKarmadaPolicy
@@ -70,10 +69,6 @@ type CarbonAwareKarmadaPolicyList struct {
 // ClusterLocation represents a member cluster and its physical location
 // so the carbon intensity for this location can be retrieved.
 type ClusterLocation struct {
-	// geo location of the karmada member cluster
-	// +kubebuilder:validation:Required
-	GeoLocation []resource.Quantity `json:"geoLocation"`
-
 	// location of the karmada member cluster
 	// +kubebuilder:validation:Required
 	Location string `json:"location"`
@@ -83,15 +78,20 @@ type ClusterLocation struct {
 	Name string `json:"name"`
 }
 
-// KarmadaPolicy represents the type of the Karmada policy
+// KarmadaTarget represents the type of the Karmada policy
 // Only one of the following Karmada policies is supported:
 // - clusterpropagationpolicies.policy.karmada.io
 // - propagationpolicies.policy.karmada.io
 // +kubebuilder:validation:Enum=clusterpropagationpolicies.policy.karmada.io;propagationpolicies.policy.karmada.io
-type KarmadaPolicy string
+type KarmadaTarget string
 
-// KarmadaPolicyRef represents the Karmada object to scale
-type KarmadaPolicyRef struct {
+const (
+	ClusterPropagationPolicy KarmadaTarget = "clusterpropagationpolicies.policy.karmada.io"
+	PropagationPolicy        KarmadaTarget = "propagationpolicies.policy.karmada.io"
+)
+
+// KarmadaTargetRef represents the Karmada object to scale
+type KarmadaTargetRef struct {
 	// name of the karmada policy
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`

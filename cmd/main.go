@@ -52,11 +52,13 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var providerName string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&providerName, "provider-name", "ElectricityMap", "The grid-intensity-go provider name.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -89,9 +91,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	carbonIntensityFetcher, err := controller.NewGridIntensityFetcher(providerName)
+	if err != nil {
+		setupLog.Error(err, "unable to create carbon intensity fetcher")
+		os.Exit(1)
+	}
+
 	if err = (&controller.CarbonAwareKarmadaPolicyReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:                 mgr.GetClient(),
+		Scheme:                 mgr.GetScheme(),
+		Recorder:               mgr.GetEventRecorderFor("carbon-aware-karmada-operator"),
+		CarbonIntensityFetcher: carbonIntensityFetcher,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CarbonAwareKarmadaPolicy")
 		os.Exit(1)
