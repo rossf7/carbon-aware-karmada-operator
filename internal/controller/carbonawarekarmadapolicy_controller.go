@@ -1,29 +1,15 @@
-/*
-Copyright 2023.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 package controller
 
 import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	karmadav1alpha1 "github.com/karmada-io/karmada/pkg/apis/policy/v1alpha1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -49,6 +35,9 @@ type CarbonAwareKarmadaPolicyReconciler struct {
 //+kubebuilder:rbac:groups=carbonaware.rossf7.github.io,resources=carbonawarekarmadapolicies,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=carbonaware.rossf7.github.io,resources=carbonawarekarmadapolicies/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=carbonaware.rossf7.github.io,resources=carbonawarekarmadapolicies/finalizers,verbs=update
+//+kubebuilder:rbac:groups=policy.karmada.io,resources=clusterpropagationpolicies,verbs=get;list;watch;update;patch
+//+kubebuilder:rbac:groups=policy.karmada.io,resources=propagationpolicies,verbs=get;list;watch;update;patch
+//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -62,12 +51,16 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 
 	carbonAwareKarmadaPolicy := &carbonawarev1alpha1.CarbonAwareKarmadaPolicy{}
 	err := r.Get(ctx, req.NamespacedName, carbonAwareKarmadaPolicy)
-	if err != nil {
-		logger.Error(err, "unable to find carbonawarekarmadapolicy")
+	if err != nil && apierrors.IsNotFound(err) {
+		logger.Error(err, "unable to find carbon aware karmada policy")
 		return ctrl.Result{RequeueAfter: requeueInterval}, client.IgnoreNotFound(err)
+	} else if err != nil {
+		logger.Error(err, "failed to find carbon aware karmada policy")
+		ReconcileErrorsTotal.WithLabelValues(carbonAwareKarmadaPolicy.Name).Inc()
+		return ctrl.Result{RequeueAfter: requeueInterval}, err
 	}
 
-	logger.Info("got custom resource", "policy", carbonAwareKarmadaPolicy)
+	ReconcilesTotal.WithLabelValues(carbonAwareKarmadaPolicy.Name).Inc()
 
 	clusters := []ClusterCarbonIntensity{}
 
@@ -75,9 +68,9 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 		clusterCarbonIntensity, err := r.CarbonIntensityFetcher.Fetch(ctx, loc.Name, loc.Location)
 		if err != nil {
 			logger.Error(err, "unable to get carbon intensity", "location", loc.Location)
+			ReconcileErrorsTotal.WithLabelValues(carbonAwareKarmadaPolicy.Name).Inc()
 			return ctrl.Result{RequeueAfter: requeueInterval}, err
 		}
-
 		clusters = append(clusters, clusterCarbonIntensity)
 	}
 
@@ -90,8 +83,11 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 	desiredClusters := int(*carbonAwareKarmadaPolicy.Spec.DesiredClusters)
 
 	for i, c := range clusters {
+		var active bool
+
 		if i < desiredClusters {
 			activeClusters = append(activeClusters, c.ClusterName)
+			active = true
 		}
 
 		status := carbonawarev1alpha1.ClusterStatus{
@@ -105,14 +101,21 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 			Name:     c.ClusterName,
 		}
 		clusterStatuses = append(clusterStatuses, status)
+		CarbonIntensityMetric.WithLabelValues(c.ClusterName,
+			c.CarbonIntensity.Location,
+			strconv.FormatBool(active)).Set(c.CarbonIntensity.Value)
 	}
 
 	switch {
 	case strings.Contains(string(carbonAwareKarmadaPolicy.Spec.KarmadaTarget), "clusterpropagationpolicies"):
 		clusterPropagationPolicy := &karmadav1alpha1.ClusterPropagationPolicy{}
 		err = r.Get(ctx, types.NamespacedName{Name: carbonAwareKarmadaPolicy.Spec.KarmadaTargetRef.Name}, clusterPropagationPolicy)
-		if err != nil {
+		if err != nil && apierrors.IsNotFound(err) {
 			logger.Error(err, "unable to find cluster propagation policy")
+			return ctrl.Result{RequeueAfter: requeueInterval}, err
+		} else if err != nil {
+			logger.Error(err, "failed to find cluster propagation policy")
+			ReconcileErrorsTotal.WithLabelValues(carbonAwareKarmadaPolicy.Name).Inc()
 			return ctrl.Result{RequeueAfter: requeueInterval}, err
 		}
 
@@ -126,14 +129,19 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 		err = r.Update(ctx, clusterPropagationPolicy)
 		if err != nil {
 			logger.Error(err, "unable to update cluster propagation policy")
+			ReconcileErrorsTotal.WithLabelValues(carbonAwareKarmadaPolicy.Name).Inc()
 			return ctrl.Result{RequeueAfter: requeueInterval}, err
 		}
 	case strings.Contains(string(carbonAwareKarmadaPolicy.Spec.KarmadaTarget), "propagationpolicies"):
 		propagationPolicy := &karmadav1alpha1.PropagationPolicy{}
 		err = r.Get(ctx, types.NamespacedName{Name: carbonAwareKarmadaPolicy.Spec.KarmadaTargetRef.Name,
 			Namespace: carbonAwareKarmadaPolicy.Spec.KarmadaTargetRef.Namespace}, propagationPolicy)
-		if err != nil {
+		if err != nil && apierrors.IsNotFound(err) {
 			logger.Error(err, "unable to find propagation policy")
+			return ctrl.Result{RequeueAfter: requeueInterval}, err
+		} else if err != nil {
+			logger.Error(err, "failed to find propagation policy")
+			ReconcileErrorsTotal.WithLabelValues(carbonAwareKarmadaPolicy.Name).Inc()
 			return ctrl.Result{RequeueAfter: requeueInterval}, err
 		}
 
@@ -147,6 +155,7 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 		err = r.Update(ctx, propagationPolicy)
 		if err != nil {
 			logger.Error(err, "unable to update propagation policy")
+			ReconcileErrorsTotal.WithLabelValues(carbonAwareKarmadaPolicy.Name).Inc()
 			return ctrl.Result{RequeueAfter: requeueInterval}, err
 		}
 	}
@@ -155,7 +164,8 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 	carbonAwareKarmadaPolicy.Status.Clusters = clusterStatuses
 	err = r.Status().Update(ctx, carbonAwareKarmadaPolicy)
 	if err != nil {
-		logger.Error(err, "unable to update status")
+		logger.Error(err, "unable to update carbon aware policy status")
+		ReconcileErrorsTotal.WithLabelValues(carbonAwareKarmadaPolicy.Name).Inc()
 		return ctrl.Result{RequeueAfter: requeueInterval}, err
 	}
 
