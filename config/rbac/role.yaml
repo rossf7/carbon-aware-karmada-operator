@@ -6,6 +6,13 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
   - carbonaware.rossf7.github.io
   resources:
   - carbonawarekarmadapolicies
@@ -31,3 +38,23 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - policy.karmada.io
+  resources:
+  - clusterpropagationpolicies
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - policy.karmada.io
+  resources:
+  - propagationpolicies
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch

@@ -8,8 +8,8 @@ import (
 var (
 	CarbonIntensityMetric = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "carbon_aware_karmada_operator_carbon_intensity",
-			Help: "Carbon intensity",
+			Name: "carbon_aware_karmada_operator_cluster_carbon_intensity",
+			Help: "Cluster carbon intensity",
 		},
 		[]string{"cluster", "location", "active"},
 	)
