@@ -4,9 +4,11 @@ This is a Kubernetes operator that does carbon aware spatial shifting using
 [Karmada](https://github.com/karmada-io/karmada) so workloads run in clusters
 at physical locations with the lowest carbon intensity.
 
-Carbon intensity measures how much carbon (CO2 equivalent) is emitted per kilowatt-hour (KWh) of electricity consumed. Carbon intensity varies by location depending on the electricity grid and by time depending on how much renewable energy is available. The operator uses the [grid-intensity-go](https://github.com/thegreenwebfoundation/grid-intensity-go) library from [The Green Web Foundation](https://www.thegreenwebfoundation.org/) to fetch carbon intensity data from the [Electricity Maps](https://www.electricitymaps.com/) or [WattTime](https://www.watttime.org/) APIs.
+[Carbon intensity](https://learn.greensoftware.foundation/carbon-awareness/#carbon-intensity) measures how much carbon (CO2 equivalent) is emitted per kilowatt-hour (KWh) of electricity consumed. Carbon intensity varies by location depending on the electricity grid and by time depending on how much renewable energy is available. The operator uses the [grid-intensity-go](https://github.com/thegreenwebfoundation/grid-intensity-go) library from [The Green Web Foundation](https://www.thegreenwebfoundation.org/) to fetch carbon intensity data from the [Electricity Maps](https://www.electricitymaps.com/) or [WattTime](https://www.watttime.org/) APIs.
 
-:warning: This operator is experimental and not intended for production usage yet.
+:warning: This operator is **experimental** and not intended for production usage yet.
+
+See this [blog post](https://rossfairbanks.com/2023/07/12/carbon-aware-spatial-shifting-with-karmada/) for more details.
 
 ## How Does It Work?
 
