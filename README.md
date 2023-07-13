@@ -128,7 +128,7 @@ kubectl apply -f samples/nginx/
 
 ```sh
 kubectl get carbonawarekarmadapolicies carbon-aware-nginx-policy -o yaml
-kubectl get propagationpolicies.policy.karmada.io nginx-propagation -o yaml
+kubectl get propagationpolicies nginx-propagation -o yaml
 ```
 
 9. Finally check the nginx deployment is scheduled in one of selected member clusters.
