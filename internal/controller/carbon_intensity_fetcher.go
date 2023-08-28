@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -11,6 +12,7 @@ import (
 )
 
 type CarbonIntensity struct {
+	IsValid   bool
 	Location  string
 	Units     string
 	ValidFrom time.Time
@@ -110,7 +112,9 @@ func (g *GridIntensityFetcher) Provider() string {
 
 func (g *GridIntensityFetcher) fetch(ctx context.Context, location string) (CarbonIntensity, error) {
 	carbonIntensity, err := g.provider.GetCarbonIntensity(ctx, location)
-	if err != nil {
+	if errors.Is(err, gridprovider.ErrReceivedNon200Status) {
+		return CarbonIntensity{IsValid: false, Location: location}, nil
+	} else if err != nil {
 		return CarbonIntensity{}, nil
 	}
 
@@ -132,7 +136,7 @@ func parseCarbonIntensity(location string, results []gridprovider.CarbonIntensit
 	if len(results) == 1 {
 		result = results[0]
 	} else if len(results) == 0 {
-		return CarbonIntensity{}, fmt.Errorf("location %s not found", location)
+		return CarbonIntensity{IsValid: false, Location: location}, nil
 	} else {
 		for _, r := range results {
 			// If the results have both absolute and relative metrics use the
@@ -145,6 +149,7 @@ func parseCarbonIntensity(location string, results []gridprovider.CarbonIntensit
 	}
 
 	return CarbonIntensity{
+		IsValid:   true,
 		Location:  location,
 		Units:     result.Units,
 		ValidFrom: result.ValidFrom,

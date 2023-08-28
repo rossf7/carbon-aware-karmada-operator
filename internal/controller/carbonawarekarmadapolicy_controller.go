@@ -82,23 +82,27 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 	clusterStatuses := []carbonawarev1alpha1.ClusterStatus{}
 	desiredClusters := int(*carbonAwareKarmadaPolicy.Spec.DesiredClusters)
 
-	for i, c := range clusters {
+	for _, c := range clusters {
 		var active bool
 
-		if i < desiredClusters {
+		if c.CarbonIntensity.IsValid && len(activeClusters) < desiredClusters {
 			activeClusters = append(activeClusters, c.ClusterName)
 			active = true
 		}
 
 		status := carbonawarev1alpha1.ClusterStatus{
-			CarbonIntensity: carbonawarev1alpha1.ClusterCarbonIntensityStatus{
+			IsValid:  c.CarbonIntensity.IsValid,
+			Location: c.CarbonIntensity.Location,
+			Name:     c.ClusterName,
+		}
+		if c.CarbonIntensity.IsValid {
+			ci := carbonawarev1alpha1.ClusterCarbonIntensityStatus{
 				Units:     c.CarbonIntensity.Units,
 				ValidFrom: c.CarbonIntensity.ValidFrom.Format(time.RFC3339),
 				ValidTo:   c.CarbonIntensity.ValidTo.Format(time.RFC3339),
 				Value:     fmt.Sprintf("%.2f", c.CarbonIntensity.Value),
-			},
-			Location: c.CarbonIntensity.Location,
-			Name:     c.ClusterName,
+			}
+			status.CarbonIntensity = ci
 		}
 		clusterStatuses = append(clusterStatuses, status)
 		CarbonIntensityMetric.WithLabelValues(c.ClusterName,
@@ -158,6 +162,10 @@ func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req 
 			ReconcileErrorsTotal.WithLabelValues(carbonAwareKarmadaPolicy.Name).Inc()
 			return ctrl.Result{RequeueAfter: requeueInterval}, err
 		}
+	default:
+		err := fmt.Errorf("unsupported karmada target %s", carbonAwareKarmadaPolicy.Spec.KarmadaTarget)
+		logger.Error(err, "unable to update karmada target")
+		return ctrl.Result{RequeueAfter: requeueInterval}, err
 	}
 
 	carbonAwareKarmadaPolicy.Status.ActiveClusters = activeClusters
