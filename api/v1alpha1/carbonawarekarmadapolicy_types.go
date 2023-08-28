@@ -71,6 +71,7 @@ type ClusterCarbonIntensityStatus struct {
 
 type ClusterStatus struct {
 	CarbonIntensity ClusterCarbonIntensityStatus `json:"carbonIntensity"`
+	IsValid         bool                         `json:"isValid"`
 	Location        string                       `json:"location"`
 	Name            string                       `json:"name"`
 }

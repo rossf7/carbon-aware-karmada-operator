@@ -111,12 +111,15 @@ spec:
                       - validTo
                       - value
                       type: object
+                    isValid:
+                      type: boolean
                     location:
                       type: string
                     name:
                       type: string
                   required:
                   - carbonIntensity
+                  - isValid
                   - location
                   - name
                   type: object
