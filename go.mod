@@ -3,7 +3,7 @@ module github.com/rossf7/carbon-aware-karmada-operator
 go 1.20
 
 require (
-	github.com/jellydator/ttlcache/v3 v3.0.1
+	github.com/jellydator/ttlcache/v3 v3.1.0
 	github.com/karmada-io/karmada v1.7.0
 	github.com/onsi/ginkgo/v2 v2.12.0
 	github.com/onsi/gomega v1.27.10
