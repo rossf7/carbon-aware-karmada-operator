@@ -47,10 +47,14 @@ type CarbonAwareKarmadaPolicyReconciler struct {
 func (r *CarbonAwareKarmadaPolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	karmadav1alpha1.AddToScheme(r.Scheme)
+	err := karmadav1alpha1.Install(r.Scheme)
+	if err != nil {
+		logger.Error(err, "failed to install crd")
+		return ctrl.Result{RequeueAfter: requeueInterval}, err
+	}
 
 	carbonAwareKarmadaPolicy := &carbonawarev1alpha1.CarbonAwareKarmadaPolicy{}
-	err := r.Get(ctx, req.NamespacedName, carbonAwareKarmadaPolicy)
+	err = r.Get(ctx, req.NamespacedName, carbonAwareKarmadaPolicy)
 	if err != nil && apierrors.IsNotFound(err) {
 		logger.Error(err, "unable to find carbon aware karmada policy")
 		return ctrl.Result{RequeueAfter: requeueInterval}, client.IgnoreNotFound(err)
