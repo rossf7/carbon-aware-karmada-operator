@@ -9,8 +9,8 @@ require (
 	github.com/onsi/gomega v1.27.10
 	github.com/prometheus/client_golang v1.16.0
 	github.com/thegreenwebfoundation/grid-intensity-go v0.5.0
-	k8s.io/apimachinery v0.28.1
-	k8s.io/client-go v0.28.1
+	k8s.io/apimachinery v0.28.2
+	k8s.io/client-go v0.28.2
 	sigs.k8s.io/controller-runtime v0.16.2
 )
 
@@ -67,7 +67,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/api v0.28.1 // indirect
+	k8s.io/api v0.28.2 // indirect
 	k8s.io/apiextensions-apiserver v0.28.0 // indirect
 	k8s.io/component-base v0.28.1 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
