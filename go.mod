@@ -6,7 +6,7 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.1.0
 	github.com/karmada-io/karmada v1.7.0
 	github.com/onsi/ginkgo/v2 v2.12.0
-	github.com/onsi/gomega v1.27.10
+	github.com/onsi/gomega v1.28.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/thegreenwebfoundation/grid-intensity-go v0.5.0
 	k8s.io/apimachinery v0.28.1
